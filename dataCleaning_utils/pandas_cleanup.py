@@ -92,3 +92,50 @@ def remove_outlier(data, dist_num):
             pass 
 
     return data
+
+def make_balanced_dataset(input_df, class_size):
+	''' make a balanced dataset of binary labels given class_size and generate independent train and validation datasets
+	input1: input dataframe where the format is data_label, content and the column names are label and text
+	input2: class size is the number of training cases for each category
+	output: shuffeled pandas dataframe for train and validation'''
+
+	# get list of unique labels in dataframe
+	label_count = []
+	labels = input_df.label.unique()
+	for label in labels:
+		input_df_temp = input_df[input_df['label'] == label]
+		label_count.append([label, len(input_df_temp)])
+
+	# make a balanced training data set 
+	minority_label = sorted(label_count, key = lambda x:x[1])[0]
+	majority_label = sorted(label_count, key = lambda x:x[1])[1]
+
+	if class_size > int(minority_label[1]):
+		print ('Class size should be lower than minority class size!')
+		raise ValueError 
+		os.abort()
+
+	temp_data = input_df[input_df['label'] == str(minority_label[0])]
+	minority_df = temp_data.sample(frac=1)
+	minority_df_train = minority_df.head(class_size)
+	minority_df_val = minority_df.tail(len(minority_df) - class_size)
+
+
+	temp_data = input_df[input_df['label'] == str(majority_label[0])]
+	majority_df = temp_data.sample(frac=1)
+	majority_df_train = majority_df.head(class_size)
+	majority_df_val = majority_df.tail(len(majority_df) - class_size)
+
+
+	frames = [minority_df_train, majority_df_train]
+	merged_df = pd.concat(frames)
+	merged_df = merged_df.sample(frac=1)
+	merged_train = merged_df.reset_index()
+
+	frames = [minority_df_val, majority_df_val]
+	merged_df = pd.concat(frames)
+	merged_df = merged_df.sample(frac=1)
+	merged_val = merged_df.reset_index()
+
+
+	return merged_train, merged_val
